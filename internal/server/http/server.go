@@ -2,8 +2,9 @@ package http
 
 import (
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/https-whoyan/dwellingPayload/config"
 	"net/http"
-	"time"
 )
 
 type Server struct {
@@ -12,12 +13,12 @@ type Server struct {
 
 // TODO create configs and create server from cfg
 
-func New() *Server {
+func New(cfg *config.Server) *Server {
 	srv := &http.Server{
-		Addr:         "localhost:8080",
-		ReadTimeout:  time.Second * 4,
-		WriteTimeout: time.Second * 4,
-		IdleTimeout:  time.Second * 60,
+		Addr:         cfg.Addr,
+		ReadTimeout:  cfg.ReadTimeout,
+		WriteTimeout: cfg.WriteTimeout,
+		IdleTimeout:  cfg.IdleTimeout,
 		Handler:      newRouter(),
 	}
 	return &Server{
@@ -29,6 +30,10 @@ func New() *Server {
 func newRouter() http.Handler {
 	r := chi.NewRouter()
 	// There we need to write endpoints and middlewares
+
+	// Middlewares
+	r.Use(middleware.RequestID)
+	r.Use(middleware.DefaultLogger)
 
 	return r
 }

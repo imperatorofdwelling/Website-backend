@@ -1,11 +1,40 @@
 package config
 
+import (
+	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/joho/godotenv"
+	"log"
+	"os"
+	"time"
+)
+
 type Config struct {
-	//TODO!
+	Server Server `yaml:"server"`
 }
 
-// .env load
+type Server struct {
+	Addr         string        `yaml:"addr"`
+	ReadTimeout  time.Duration `yaml:"readTimeout"`
+	WriteTimeout time.Duration `yaml:"writeTimeout"`
+	IdleTimeout  time.Duration `yaml:"idleTimeout"`
+	/*
+		Idle timeout is a period of time during which
+		the server or connection waits for any action from the client.
+	*/
+}
 
 func LoadConfig() *Config {
-	return &Config{}
+	// Loading .env vars
+	if err := godotenv.Load("./env"); err != nil {
+		log.Fatal(err)
+	}
+
+	cfg := new(Config)
+
+	// Get path to cfg from .env
+	cfgPath := os.Getenv("LOCAL_CFG_PATH")
+	if err := cleanenv.ReadConfig(cfgPath, cfg); err != nil {
+		log.Fatal(err)
+	}
+	return cfg
 }
