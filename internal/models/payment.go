@@ -7,26 +7,29 @@ import (
 )
 
 type TransferHistory struct {
+	Id             uuid.UUID `json:"id"`
 	AccountFrom    uuid.UUID `json:"accountFrom"`
 	AccountTo      uuid.UUID `json:"accountTo"`
 	Amount         float64   `json:"amount"`
-	TimeOfCreation time.Time
+	TimeOfCreation time.Time `json:"timeOfCreation"`
 }
 
 type Transaction struct {
-	AccountFrom uuid.UUID
-	AccountTo   uuid.UUID
-	ItemPrice   float64
-	ItemUUID    uuid.UUID
-	IsFrozen    bool
-	IsAccepted  bool
+	Id          uuid.UUID `json:"id"`
+	AccountFrom uuid.UUID `json:"accountFrom"`
+	AccountTo   uuid.UUID `json:"accountTo"`
+	ItemPrice   float64   `json:"itemPrice"`
+	ItemUUID    uuid.UUID `json:"itemUUID"`
+	IsFrozen    bool      `json:"isFrozen"`
+	IsAccepted  bool      `json:"isAccepted"`
 }
 
 type TransactionHistory struct {
-	TransactionId  uuid.UUID
-	TimeOfCreation time.Time
+	Id             uuid.UUID `json:"id"`
+	TransactionId  uuid.UUID `json:"transactionId"`
+	TimeOfCreation time.Time `json:"time_of_creation"`
 	// Operation type have two options: ('CT', 'CREATED'), ('CD', 'COMPLETED')
-	OperationType string
+	OperationType string `json:"operationType"`
 }
 
 func (t *TransferHistory) String() string {
