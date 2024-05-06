@@ -4,6 +4,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/https-whoyan/dwellingPayload/config"
+	"log"
 	"net/http"
 )
 
@@ -36,4 +37,10 @@ func newRouter() http.Handler {
 	r.Use(middleware.DefaultLogger)
 
 	return r
+}
+
+func (s *Server) Run() {
+	if err := s.srv.ListenAndServe(); err != nil {
+		log.Fatal(err)
+	}
 }

@@ -9,7 +9,7 @@ import (
 )
 
 type Config struct {
-	Server Server `yaml:"server"`
+	Server *Server `yaml:"server"`
 }
 
 type Server struct {
