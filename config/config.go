@@ -16,11 +16,11 @@ type Server struct {
 	Addr         string        `yaml:"addr"`
 	ReadTimeout  time.Duration `yaml:"readTimeout"`
 	WriteTimeout time.Duration `yaml:"writeTimeout"`
-	IdleTimeout  time.Duration `yaml:"idleTimeout"`
 	/*
 		Idle timeout is a period of time during which
 		the server or connection waits for any action from the client.
 	*/
+	IdleTimeout time.Duration `yaml:"idleTimeout"`
 }
 
 func LoadConfig() *Config {
