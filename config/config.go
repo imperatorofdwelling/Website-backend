@@ -10,6 +10,7 @@ import (
 
 type Config struct {
 	Server *Server `yaml:"server"`
+	DB     *DB     `yaml:"db"`
 }
 
 type Server struct {
@@ -21,6 +22,15 @@ type Server struct {
 		the server or connection waits for any action from the client.
 	*/
 	IdleTimeout time.Duration `yaml:"idleTimeout"`
+}
+
+type DB struct {
+	DBHost     string `yaml:"db_host"`
+	DBPort     string `yaml:"db_port"`
+	DBUsername string `yaml:"db_username"`
+	DBPassword string `yaml:"db_password"`
+	DBName     string `yaml:"db_name"`
+	DBSSLMode  string `yaml:"dbssl_mode"`
 }
 
 func LoadConfig() *Config {

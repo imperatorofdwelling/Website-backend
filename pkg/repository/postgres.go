@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"fmt"
+	"github.com/https-whoyan/dwellingPayload/config"
 	"github.com/jmoiron/sqlx"
 	"sync"
 )
@@ -10,15 +11,6 @@ import (
 const (
 	usersTable = "users"
 )
-
-type Config struct {
-	Host     string
-	Port     string
-	Username string
-	Password string
-	DBName   string
-	SSLMode  string
-}
 
 type PostgresDB struct {
 	sync.Mutex
@@ -28,13 +20,13 @@ type PostgresDB struct {
 var currDB *PostgresDB
 
 // InitPostgresDB initializes a new instance of the Database.
-func InitPostgresDB(cfg Config) error {
+func InitPostgresDB(cfg config.DB) error {
 	// This if ensures that only 1 database instance is initialized.
 	if currDB != nil {
 		return errors.New("the database is already initialized")
 	}
 	sqlxDB, err := sqlx.Open("postgres", fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		cfg.Host, cfg.Port, cfg.Username, cfg.Password, cfg.DBName, cfg.SSLMode))
+		cfg.DBHost, cfg.DBPort, cfg.DBUsername, cfg.DBPassword, cfg.DBName, cfg.DBSSLMode))
 	if err != nil {
 		return err
 	}
