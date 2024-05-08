@@ -1,9 +1,7 @@
 package repository
 
-import (
-	"github.com/jmoiron/sqlx"
-)
-
+// Below not needed code
+/*
 type Authorization interface {
 	//CreateUser(user User) (int, error)
 	//GetUser(username, password string) (todo.User, error)
@@ -19,3 +17,4 @@ func NewRepository(db *sqlx.DB) *Repository {
 		Authorization: NewAuthPostgres(db),
 	}
 }
+*/

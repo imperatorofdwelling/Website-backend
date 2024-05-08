@@ -1,10 +1,7 @@
 package repository
 
-import (
-	"fmt"
-	"github.com/jmoiron/sqlx"
-)
-
+// Below not need functionality
+/*
 type AuthPostgres struct {
 	db *sqlx.DB
 }
@@ -31,3 +28,4 @@ func (r *AuthPostgres) GetUser(username, password string) (User, error) {
 
 	return user, err
 }
+*/
