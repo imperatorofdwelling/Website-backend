@@ -17,6 +17,18 @@ type PostgresDB struct {
 	db *sqlx.DB
 }
 
+const (
+	Insert = iota + 1
+	Select
+	Update
+	Delete
+)
+
+type Query struct {
+	Type     int
+	StrQuery string
+}
+
 var currDB *PostgresDB
 
 // InitPostgresDB initializes a new instance of the Database.
