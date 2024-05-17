@@ -1,50 +1,68 @@
 package config
 
 import (
-	"github.com/ilyakaznacheev/cleanenv"
-	"github.com/joho/godotenv"
 	"log"
-	"os"
-	"time"
+
+	"github.com/joho/godotenv"
+
+	"github.com/https-whoyan/dwellingPayload/internal/server/http"
+	"github.com/https-whoyan/dwellingPayload/pkg/repository"
 )
 
 type Config struct {
-	Server *Server `yaml:"server"`
-	DB     *DB     `yaml:"db"`
-}
-
-type Server struct {
-	Addr         string        `yaml:"addr"`
-	ReadTimeout  time.Duration `yaml:"readTimeout"`
-	WriteTimeout time.Duration `yaml:"writeTimeout"`
-	/*
-		Idle timeout is a period of time during which
-		the server or connection waits for any action from the client.
-	*/
-	IdleTimeout time.Duration `yaml:"idleTimeout"`
-}
-
-type DB struct {
-	DBHost     string `yaml:"db_host"`
-	DBPort     string `yaml:"db_port"`
-	DBUsername string `yaml:"db_username"`
-	DBPassword string `yaml:"db_password"`
-	DBName     string `yaml:"db_name"`
-	DBSSLMode  string `yaml:"dbssl_mode"`
+	Server            *http.ServerConfig            `yaml:"server"`
+	PostgresSQLConfig *repository.PostgresSQLConfig `yaml:"db"`
 }
 
 func LoadConfig() *Config {
-	// Loading .env vars
-	if err := godotenv.Load("./env"); err != nil {
+	err := loadDotEnv()
+	if err != nil {
+		//log Fatal by logger
 		log.Fatal(err)
 	}
-
-	cfg := new(Config)
-
-	// Get path to cfg from .env
-	cfgPath := os.Getenv("LOCAL_CFG_PATH")
-	if err := cleanenv.ReadConfig(cfgPath, cfg); err != nil {
+	serverConfig, err := http.LoadConfig()
+	if err != nil {
+		//log Fatal by logger
 		log.Fatal(err)
+	}
+	postgresSQLConfig, err := repository.LoadConfig()
+	if err != nil {
+		//log Fatal by logger
+		log.Fatal(err)
+	}
+	cfg := &Config{
+		Server:            serverConfig,
+		PostgresSQLConfig: postgresSQLConfig,
 	}
 	return cfg
+}
+
+func (c *Config) Run() {
+	err := repository.InitPostgresDB(c.PostgresSQLConfig)
+	if err != nil {
+		//log Fatal by logger
+		log.Fatal(err)
+	}
+	srv := http.New(c.Server)
+
+	defer c.Disconnect(srv)
+	srv.Run()
+}
+
+func (c *Config) Disconnect(server *http.Server) {
+	err := repository.Disconnect()
+	if err != nil {
+		// Log print by logger
+		log.Println(err)
+	}
+	err = server.Disconnect()
+	if err != nil {
+		// Log print by logger
+		log.Println(err)
+	}
+}
+
+func loadDotEnv() error {
+	err := godotenv.Load()
+	return err
 }
