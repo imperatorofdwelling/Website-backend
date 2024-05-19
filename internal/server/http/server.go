@@ -3,7 +3,9 @@ package http
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/https-whoyan/dwellingPayload/internal/metrics"
 	"log"
+	"log/slog"
 	"net/http"
 	"time"
 )
@@ -33,13 +35,13 @@ type Server struct {
 	srv *http.Server
 }
 
-func New(cfg *ServerConfig) *Server {
+func New(cfg *ServerConfig, log *slog.Logger) *Server {
 	srv := &http.Server{
 		Addr:         cfg.Addr,
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
 		IdleTimeout:  cfg.IdleTimeout,
-		Handler:      newRouter(),
+		Handler:      newRouter(log),
 	}
 	return &Server{
 		srv: srv,
@@ -47,13 +49,19 @@ func New(cfg *ServerConfig) *Server {
 }
 
 // Creating chi router
-func newRouter() http.Handler {
+func newRouter(log *slog.Logger) http.Handler {
 	r := chi.NewRouter()
 	// There we need to write endpoints and middlewares
 
 	// Middlewares
 	r.Use(middleware.RequestID)
 	r.Use(middleware.DefaultLogger)
+	r.Use(middleware.Recoverer)
+
+	// TODO: names for endpoints
+	r.Post(
+		"/payment/create",
+		metrics.Payment(log))
 
 	return r
 }
