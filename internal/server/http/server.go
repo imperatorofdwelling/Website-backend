@@ -58,6 +58,8 @@ func newRouter(log *slog.Logger) http.Handler {
 	r.Use(middleware.DefaultLogger)
 	r.Use(middleware.Recoverer)
 
+	// We need db instance to work with it
+	payment := metrics.NewPaymentHandler(log)
 	// TODO: names for endpoints
 	r.Post(
 		"/payment/create",
