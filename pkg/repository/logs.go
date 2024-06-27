@@ -26,8 +26,10 @@ type LogRepositoryImpl struct {
 	db *PostgresDB
 }
 
-func NewLogRepository() LogRepository {
-	return &LogRepositoryImpl{}
+func NewLogRepository(db *PostgresDB) LogRepository {
+	return &LogRepositoryImpl{
+		db: db,
+	}
 }
 
 func (l *LogRepositoryImpl) InsertLog(log *Log) error {
