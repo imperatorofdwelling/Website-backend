@@ -40,14 +40,16 @@ func LoadConfig() *Config {
 }
 
 func (c *Config) Run(logger *slog.Logger) {
-	//err := repository.InitPostgresDB(c.PostgresSQLConfig)
-	//if err != nil {
-	//	//log Fatal by logger
-	//	log.Fatal(err)
-	//}
+	err := repository.InitPostgresDB(c.PostgresSQLConfig)
+	if err != nil {
+		//log Fatal by logger
+		log.Fatal(err)
+	}
+	db, _ := repository.GetDB()
+	repo := repository.NewLogRepository(db)
 	// To init storeId and secretKey from .env
 	metrics.Init()
-	srv := http.New(c.Server, logger)
+	srv := http.New(c.Server, logger, repo)
 
 	defer c.Disconnect(srv)
 	srv.Run()

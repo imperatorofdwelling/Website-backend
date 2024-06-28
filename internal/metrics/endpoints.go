@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	myJson "github.com/https-whoyan/dwellingPayload/pkg/json"
+	"github.com/https-whoyan/dwellingPayload/pkg/repository"
 	"io"
 	"log/slog"
 	"net/http"
@@ -100,78 +101,96 @@ func NewErrorResponse(message string) *ErrorResponse {
 	}
 }
 
-func Payment(log *slog.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+type PaymentHandler struct {
+	log       *slog.Logger
+	logWriter repository.LogRepository
+}
 
-		const fn = "endpoints.Payment"
-
-		log = log.With(slog.String("fn", fn))
-		log.Debug("payment endpoint called")
-
-		req := new(Create)
-
-		if err := myJson.Read(r, req); err != nil {
-			log.Error("failed to read request", slog.String("error", err.Error()))
-			myJson.Write(w, http.StatusBadRequest, NewErrorResponse("bad request"))
-			return
-		}
-
-		createReq := createPaymentBody(req)
-
-		resp, err := sendRequest(createReq)
-		if err != nil {
-			log.Error(
-				"failed to send request to YooKassa API",
-				slog.String("error", err.Error()),
-			)
-			myJson.Write(w, http.StatusInternalServerError, NewErrorResponse("server error"))
-			return
-		}
-
-		log.Debug("request to API sent")
-
-		defer resp.Body.Close()
-
-		// Read response
-		respBody, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Error(
-				"failed to read response",
-				slog.String("error", err.Error()),
-			)
-			myJson.Write(w, http.StatusInternalServerError, NewErrorResponse("server error"))
-			return
-		}
-
-		paymentResp := new(PaymentResponse)
-
-		// Create JSON Response
-		if err := json.Unmarshal(respBody, paymentResp); err != nil {
-			log.Error(
-				"failed to make json from response",
-				slog.String("error", err.Error()),
-			)
-			myJson.Write(w, http.StatusInternalServerError, NewErrorResponse("server error"))
-			return
-		}
-
-		// Send response to Frontend
-		myJson.Write(w, http.StatusOK, paymentResp)
-
-		log.Info("response to frontend successfully sent")
-
+func NewPaymentHandler(log *slog.Logger, db repository.LogRepository) *PaymentHandler {
+	return &PaymentHandler{
+		log:       log,
+		logWriter: db,
 	}
 }
 
+func (h *PaymentHandler) Payment(w http.ResponseWriter, r *http.Request) {
+	const fn = "endpoints.Payment"
+
+	log := h.log.With(slog.String("fn", fn))
+	log.Debug("payment endpoint called")
+
+	req := new(Create)
+
+	if err := myJson.Read(r, req); err != nil {
+		log.Error("failed to read request", slog.String("error", err.Error()))
+		myJson.Write(w, http.StatusBadRequest, NewErrorResponse("bad request"))
+		return
+	}
+
+	createReq := createPaymentBody(req)
+
+	resp, err := sendRequest(createReq)
+	if err != nil {
+		log.Error(
+			"failed to send request to YooKassa API",
+			slog.String("error", err.Error()),
+		)
+		myJson.Write(w, http.StatusInternalServerError, NewErrorResponse("server error"))
+		return
+	}
+
+	log.Debug("request to API sent")
+
+	defer resp.Body.Close()
+
+	// Read response
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Error(
+			"failed to read response",
+			slog.String("error", err.Error()),
+		)
+		myJson.Write(w, http.StatusInternalServerError, NewErrorResponse("server error"))
+		return
+	}
+
+	paymentResp := new(PaymentResponse)
+
+	// Create JSON Response
+	if err := json.Unmarshal(respBody, paymentResp); err != nil {
+		log.Error(
+			"failed to make json from response",
+			slog.String("error", err.Error()),
+		)
+		myJson.Write(w, http.StatusInternalServerError, NewErrorResponse("server error"))
+		return
+	}
+
+	log.Info("response to frontend successfully sent")
+
+	logToDb := repository.NewLog(paymentResp.ID, req.Amount.Value, paymentResp.Status)
+
+	err = h.logWriter.InsertLog(logToDb)
+	if err != nil {
+		log.Error("failed to write log to db", slog.String("error", err.Error()))
+		myJson.Write(w, http.StatusInternalServerError, NewErrorResponse("server error"))
+		return
+	}
+	log.Info("log to db successfully written")
+
+	// Send response to Frontend
+	myJson.Write(w, http.StatusOK, paymentResp)
+}
+
 func createPaymentBody(create *Create) *CreatePaymentRequest {
+	orderNum := uuid.New().String()
 	createReq := &CreatePaymentRequest{
 		Amount: create.Amount,
 		Confirmation: Confirmation{
 			Type: "embedded",
 		},
-		Capture: true,
-		// TODO: num of order
-		Description: "Заказ №72",
+		Capture:     true,
+		Description: "Заказ № " + orderNum,
 	}
 	return createReq
 }
