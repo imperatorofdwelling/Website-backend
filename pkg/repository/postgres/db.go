@@ -1,4 +1,4 @@
-package repository
+package postgres
 
 // Below not needed code
 /*

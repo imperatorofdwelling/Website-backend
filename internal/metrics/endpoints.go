@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	myJson "github.com/https-whoyan/dwellingPayload/pkg/json"
-	"github.com/https-whoyan/dwellingPayload/pkg/repository"
+	"github.com/https-whoyan/dwellingPayload/pkg/repository/postgres"
 	"io"
 	"log/slog"
 	"net/http"
@@ -103,10 +103,10 @@ func NewErrorResponse(message string) *ErrorResponse {
 
 type PaymentHandler struct {
 	log       *slog.Logger
-	logWriter repository.LogRepository
+	logWriter postgres.LogRepository
 }
 
-func NewPaymentHandler(log *slog.Logger, db repository.LogRepository) *PaymentHandler {
+func NewPaymentHandler(log *slog.Logger, db postgres.LogRepository) *PaymentHandler {
 	return &PaymentHandler{
 		log:       log,
 		logWriter: db,
@@ -168,7 +168,7 @@ func (h *PaymentHandler) Payment(w http.ResponseWriter, r *http.Request) {
 
 	log.Info("response to frontend successfully sent")
 
-	logToDb := repository.NewLog(paymentResp.ID, req.Amount.Value, paymentResp.Status)
+	logToDb := postgres.NewLog(paymentResp.ID, req.Amount.Value, paymentResp.Status)
 
 	err = h.logWriter.InsertLog(logToDb)
 	if err != nil {

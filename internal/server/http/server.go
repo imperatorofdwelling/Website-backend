@@ -4,7 +4,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/https-whoyan/dwellingPayload/internal/metrics"
-	"github.com/https-whoyan/dwellingPayload/pkg/repository"
+	"github.com/https-whoyan/dwellingPayload/pkg/repository/postgres"
 	"log"
 	"log/slog"
 	"net/http"
@@ -36,7 +36,7 @@ type Server struct {
 	srv *http.Server
 }
 
-func New(cfg *ServerConfig, log *slog.Logger, repo repository.LogRepository) *Server {
+func New(cfg *ServerConfig, log *slog.Logger, repo postgres.LogRepository) *Server {
 	srv := &http.Server{
 		Addr:         cfg.Addr,
 		ReadTimeout:  cfg.ReadTimeout,
@@ -50,7 +50,7 @@ func New(cfg *ServerConfig, log *slog.Logger, repo repository.LogRepository) *Se
 }
 
 // Creating chi router
-func newRouter(log *slog.Logger, repo repository.LogRepository) http.Handler {
+func newRouter(log *slog.Logger, repo postgres.LogRepository) http.Handler {
 	r := chi.NewRouter()
 	// There we need to write endpoints and middlewares
 

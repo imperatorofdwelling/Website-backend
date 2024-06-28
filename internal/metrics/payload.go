@@ -7,7 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/https-whoyan/dwellingPayload/internal/models"
 	myJson "github.com/https-whoyan/dwellingPayload/pkg/json"
-	"github.com/https-whoyan/dwellingPayload/pkg/repository"
+	"github.com/https-whoyan/dwellingPayload/pkg/repository/postgres"
 	"io"
 	"log/slog"
 	"net/http"
@@ -77,7 +77,7 @@ func SaveCardHandler(log *slog.Logger) http.HandlerFunc {
 		cardMask, _ := models.GenerateCardMask(c.FirstSix, c.LastFour)
 		insertedCard := models.NewRefillableCard(&insertedUsed, c.Synonym, cardMask)
 
-		db, isContains := repository.GetDB()
+		db, isContains := postgres.GetDB()
 		if !isContains {
 			log.Error("failed to get database")
 			myJson.Write(w, http.StatusInternalServerError, NewErrorResponse(
@@ -177,7 +177,7 @@ func Payload(log *slog.Logger) http.HandlerFunc {
 			return
 		}
 
-		currDB, exists := repository.GetDB()
+		currDB, exists := postgres.GetDB()
 		if !exists {
 			log.Error("failed to get database")
 			myJson.Write(w, http.StatusInternalServerError,

@@ -2,18 +2,18 @@ package config
 
 import (
 	"github.com/https-whoyan/dwellingPayload/internal/metrics"
+	"github.com/https-whoyan/dwellingPayload/pkg/repository/postgres"
 	"log"
 	"log/slog"
 
 	"github.com/joho/godotenv"
 
 	"github.com/https-whoyan/dwellingPayload/internal/server/http"
-	"github.com/https-whoyan/dwellingPayload/pkg/repository"
 )
 
 type Config struct {
-	Server            *http.ServerConfig            `yaml:"server"`
-	PostgresSQLConfig *repository.PostgresSQLConfig `yaml:"db"`
+	Server            *http.ServerConfig          `yaml:"server"`
+	PostgresSQLConfig *postgres.PostgresSQLConfig `yaml:"db"`
 }
 
 func LoadConfig() *Config {
@@ -27,7 +27,7 @@ func LoadConfig() *Config {
 		//log Fatal by logger
 		log.Fatal(err)
 	}
-	postgresSQLConfig, err := repository.LoadConfig()
+	postgresSQLConfig, err := postgres.LoadConfig()
 	if err != nil {
 		//log Fatal by logger
 		log.Fatal(err)
@@ -40,13 +40,13 @@ func LoadConfig() *Config {
 }
 
 func (c *Config) Run(logger *slog.Logger) {
-	err := repository.InitPostgresDB(c.PostgresSQLConfig)
+	err := postgres.InitPostgresDB(c.PostgresSQLConfig)
 	if err != nil {
 		//log Fatal by logger
 		log.Fatal(err)
 	}
-	db, _ := repository.GetDB()
-	repo := repository.NewLogRepository(db)
+	db, _ := postgres.GetDB()
+	repo := postgres.NewLogRepository(db)
 	// To init storeId and secretKey from .env
 	metrics.Init()
 	srv := http.New(c.Server, logger, repo)
@@ -56,7 +56,7 @@ func (c *Config) Run(logger *slog.Logger) {
 }
 
 func (c *Config) Disconnect(server *http.Server) {
-	err := repository.Disconnect()
+	err := postgres.Disconnect()
 	if err != nil {
 		// Log print by logger
 		log.Println(err)
