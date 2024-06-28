@@ -21,3 +21,16 @@ CREATE TABLE IF NOT EXISTS public.users_card
 
 ALTER TABLE IF EXISTS public.users_card
     OWNER to postgres;
+
+
+CREATE TABLE IF NOT EXISTS public.logs
+(
+    id SERIAL PRIMARY KEY,
+    transaction_id varchar(255) NOT NULL UNIQUE,
+    amount numeric(10,2) NOT NULL,
+    status varchar(255) NOT NULL DEFAULT 'pending',
+    time timestamp NOT NULL
+);
+
+ALTER TABLE IF EXISTS public.logs
+    OWNER to postgres;
