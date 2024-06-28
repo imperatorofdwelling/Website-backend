@@ -9,10 +9,10 @@ import (
 )
 
 type RefillableCardDBRow struct {
-	Id           int64  `json:"id"`
-	User_id      int    `json:"user_id"`
-	Card_synonym string `json:"card_synonym"`
-	Card_mask    string `json:"card_mask"`
+	Id          int    `json:"id"`
+	UserId      string `json:"user_id"`
+	CardSynonym string `json:"card_synonym"`
+	CardMask    string `json:"card_mask"`
 }
 
 func (c *RefillableCardDBRow) RefillableCardDBRowToCardRecord() (*models.RefillableCard, error) {
@@ -20,8 +20,7 @@ func (c *RefillableCardDBRow) RefillableCardDBRowToCardRecord() (*models.Refilla
 		return nil, nil
 	}
 
-	userIDStr := strconv.FormatInt(int64(c.User_id), 10)
-	userIDUUID, err := uuid.Parse(userIDStr)
+	userIDUUID, err := uuid.Parse(c.UserId)
 	if err != nil {
 		return nil, err
 	}
@@ -30,8 +29,8 @@ func (c *RefillableCardDBRow) RefillableCardDBRowToCardRecord() (*models.Refilla
 			Id:      userIDUUID,
 			Balance: 0,
 		},
-		Synonym:  c.Card_synonym,
-		CardMask: c.Card_mask,
+		Synonym:  c.CardSynonym,
+		CardMask: c.CardMask,
 	}, err
 }
 
@@ -75,6 +74,24 @@ func (db *PostgresDB) InsertNewRefillableCard(card *models.RefillableCard) (*Ref
 		return nil, err
 	}
 	return db.getRefillableCardByRowID(lastID)
+}
+
+func (db *PostgresDB) InsertOrUpdateRefillableCard(card *models.RefillableCard) (isUpdated bool, err error) {
+	if db == nil || db.db == nil {
+		return false, errors.New("nil DB")
+	}
+	if isFullDataOfNewCard := card.IsFullData(); !isFullDataOfNewCard {
+		return false, errors.New("try to insert not full card data")
+	}
+
+	result, err := db.GetRefillableCardByUser(card.Owner)
+	if result == nil || err != nil {
+		_, err = db.UpdateRefillableCardInfo(card)
+		return true, err
+	}
+
+	_, err = db.InsertNewRefillableCard(card)
+	return false, err
 }
 
 func (db *PostgresDB) GetRefillableCardByUser(user *models.User) (*RefillableCardDBRow, error) {
@@ -121,10 +138,10 @@ func (db *PostgresDB) GetRefillableCardByUserID(userId uuid.UUID) (*RefillableCa
 		return nil, nil
 	}
 	var row *RefillableCardDBRow
-	err = rows.Scan(&row.Id,
-		&row.User_id,
-		&row.Card_synonym,
-		&row.Card_mask)
+	err = rows.Scan(row.Id,
+		row.UserId,
+		row.CardSynonym,
+		row.CardMask)
 	if err != nil {
 		return nil, err
 	}
@@ -162,10 +179,10 @@ func (db *PostgresDB) getRefillableCardByRowID(rowId int64) (*RefillableCardDBRo
 	}
 
 	var row *RefillableCardDBRow
-	err = rows.Scan(&row.Id,
-		&row.User_id,
-		&row.Card_synonym,
-		&row.Card_mask)
+	err = rows.Scan(row.Id,
+		row.UserId,
+		row.CardSynonym,
+		row.CardMask)
 	if err != nil {
 		return nil, err
 	}
@@ -212,5 +229,5 @@ func (db *PostgresDB) UpdateRefillableCardInfo(card *models.RefillableCard) (
 	if err != nil {
 		return nil, err
 	}
-	return db.getRefillableCardByRowID(rowID)
+	return db.getRefillableCardByRowID(int64(rowID))
 }

@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	envLocal = "local"
-	envProd  = "prod"
+	EnvLocal = "local"
+	EnvProd  = "prod"
 )
 
 var unknownEnv = errors.New("unknown environment (should be local or prod)")
@@ -18,9 +18,9 @@ var unknownEnv = errors.New("unknown environment (should be local or prod)")
 func New(env string) *slog.Logger {
 	var logger *slog.Logger
 	switch env {
-	case envLocal:
+	case EnvLocal:
 		logger = setupPrettySlog()
-	case envProd:
+	case EnvProd:
 		// TODO change writer(example: file)
 		logger = slog.New(
 			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),

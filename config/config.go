@@ -1,7 +1,9 @@
 package config
 
 import (
+	"github.com/https-whoyan/dwellingPayload/internal/metrics"
 	"log"
+	"log/slog"
 
 	"github.com/joho/godotenv"
 
@@ -37,13 +39,15 @@ func LoadConfig() *Config {
 	return cfg
 }
 
-func (c *Config) Run() {
-	err := repository.InitPostgresDB(c.PostgresSQLConfig)
-	if err != nil {
-		//log Fatal by logger
-		log.Fatal(err)
-	}
-	srv := http.New(c.Server)
+func (c *Config) Run(logger *slog.Logger) {
+	//err := repository.InitPostgresDB(c.PostgresSQLConfig)
+	//if err != nil {
+	//	//log Fatal by logger
+	//	log.Fatal(err)
+	//}
+	// To init storeId and secretKey from .env
+	metrics.Init()
+	srv := http.New(c.Server, logger)
 
 	defer c.Disconnect(srv)
 	srv.Run()
