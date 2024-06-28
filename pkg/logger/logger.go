@@ -2,10 +2,12 @@ package logger
 
 import (
 	"errors"
-	"github.com/https-whoyan/dwellingPayload/pkg/logger/slogpretty"
 	"log"
-	"log/slog"
 	"os"
+
+	"log/slog"
+
+	"github.com/imperatorofdwelling/Website-backend/pkg/logger/slogpretty"
 )
 
 const (

@@ -1,14 +1,16 @@
 package config
 
 import (
-	"github.com/https-whoyan/dwellingPayload/internal/metrics"
-	"github.com/https-whoyan/dwellingPayload/pkg/repository/postgres"
 	"log"
+
 	"log/slog"
 
-	"github.com/joho/godotenv"
+	"github.com/imperatorofdwelling/Website-backend/internal/metrics"
+	"github.com/imperatorofdwelling/Website-backend/internal/server/http"
 
-	"github.com/https-whoyan/dwellingPayload/internal/server/http"
+	"github.com/imperatorofdwelling/Website-backend/pkg/repository/postgres"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {

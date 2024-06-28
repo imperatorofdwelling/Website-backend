@@ -2,17 +2,22 @@ package metrics
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/https-whoyan/dwellingPayload/internal/models"
-	myJson "github.com/https-whoyan/dwellingPayload/pkg/json"
-	"github.com/https-whoyan/dwellingPayload/pkg/repository/postgres"
 	"io"
-	"log/slog"
-	"net/http"
 	"time"
 	"unicode"
+
+	"encoding/json"
+	"log/slog"
+	"net/http"
+
+	"github.com/imperatorofdwelling/Website-backend/internal/models"
+
+	myJson "github.com/imperatorofdwelling/Website-backend/pkg/json"
+
+	"github.com/imperatorofdwelling/Website-backend/pkg/repository/postgres"
+
+	"github.com/google/uuid"
 )
 
 // _______________________

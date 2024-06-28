@@ -1,14 +1,18 @@
 package http
 
 import (
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/https-whoyan/dwellingPayload/internal/metrics"
-	"github.com/https-whoyan/dwellingPayload/pkg/repository/postgres"
 	"log"
+	"time"
+
 	"log/slog"
 	"net/http"
-	"time"
+
+	"github.com/imperatorofdwelling/Website-backend/internal/metrics"
+
+	"github.com/imperatorofdwelling/Website-backend/pkg/repository/postgres"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 type ServerConfig struct {

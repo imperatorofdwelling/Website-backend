@@ -1,4 +1,4 @@
-module github.com/https-whoyan/dwellingPayload
+module github.com/imperatorofdwelling/Website-backend
 
 go 1.21.1
 
@@ -16,3 +16,5 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	golang.org/x/sys v0.18.0 // indirect
 )
+
+replace github.com/imperatorofdwelling/Website-backend => ../payload
