@@ -7,8 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/imperatorofdwelling/Website-backend/internal/metrics"
-
+	"github.com/imperatorofdwelling/Website-backend/internal/endpoints"
 	"github.com/imperatorofdwelling/Website-backend/pkg/repository/postgres"
 
 	"github.com/go-chi/chi/v5"
@@ -64,7 +63,7 @@ func newRouter(log *slog.Logger, repo postgres.LogRepository) http.Handler {
 	r.Use(middleware.Recoverer)
 
 	// We need db instance to work with it
-	payment := metrics.NewPaymentHandler(log, repo)
+	payment := endpoints.NewPaymentHandler(log, repo)
 	// TODO: names for endpoints
 	r.Post(
 		"/payment/create",

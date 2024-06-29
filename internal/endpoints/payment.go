@@ -1,46 +1,19 @@
-package metrics
+package endpoints
 
 import (
 	"bytes"
-	"fmt"
-	"io"
-	"os"
-
 	"encoding/json"
+	"io"
 	"log/slog"
 	"net/http"
 
+	"github.com/imperatorofdwelling/Website-backend/internal/metrics"
+	"github.com/imperatorofdwelling/Website-backend/internal/webhook"
 	myJson "github.com/imperatorofdwelling/Website-backend/pkg/json"
-
 	"github.com/imperatorofdwelling/Website-backend/pkg/repository/postgres"
 
 	"github.com/google/uuid"
 )
-
-const (
-	API_PROTOCOL = "https"
-	API_VERSION  = 3
-	API_ENDPOINT = "api.yookassa.ru"
-)
-
-const (
-	PAYMENTS_ENDPOINT = "payments"
-	PAYOUTS_ENDPOINT  = "payouts"
-)
-
-var (
-	PAYMENTS_API = fmt.Sprintf("%v://%v/v%v/", API_PROTOCOL, API_ENDPOINT, API_VERSION)
-)
-
-var (
-	// Test store ID
-	storeID, secretKey string
-)
-
-func Init() {
-	storeID = os.Getenv("STORE_ID")
-	secretKey = os.Getenv("SECRET_KEY")
-}
 
 // Request from frontend
 
@@ -58,11 +31,10 @@ type CreatePaymentRequest struct {
 	Description  string       `json:"description"`
 }
 
-// Response to frontend
-
+// PaymentResponse response from youkassa
 type PaymentResponse struct {
 	ID           string               `json:"id"`
-	Status       string               `json:"status"`
+	Status       metrics.Status       `json:"status"`
 	Paid         bool                 `json:"paid"`
 	Amount       Amount               `json:"amount"`
 	Confirmation ConfirmationResponse `json:"confirmation"`
@@ -72,6 +44,22 @@ type PaymentResponse struct {
 	Recipient    Recipient            `json:"recipient"`
 	Refundable   bool                 `json:"refundable"`
 	Test         bool                 `json:"test"`
+}
+
+// PaymentAnswer response (answer) to frontend
+type PaymentAnswer struct {
+	TransactionId uuid.UUID        `json:"transaction_id"`
+	Status        metrics.Status   `json:"status"`
+	YouKassaModel *PaymentResponse `json:"you_kassa_model"`
+}
+
+func NewPaymentAnswer(youKassaModel *PaymentResponse) *PaymentAnswer {
+	newUUID, _ := uuid.NewUUID()
+	return &PaymentAnswer{
+		TransactionId: newUUID,
+		Status:        metrics.Pending,
+		YouKassaModel: youKassaModel,
+	}
 }
 
 // Payment amount
@@ -158,10 +146,10 @@ func (h *PaymentHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	paymentResp := new(PaymentResponse)
+	paymentRespFromYoukassa := new(PaymentResponse)
 
 	// Create JSON Response
-	if err := json.Unmarshal(respBody, paymentResp); err != nil {
+	if err := json.Unmarshal(respBody, paymentRespFromYoukassa); err != nil {
 		log.Error(
 			"failed to make json from response",
 			slog.String("error", err.Error()),
@@ -170,9 +158,13 @@ func (h *PaymentHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	paymentResp := NewPaymentAnswer(paymentRespFromYoukassa)
+	checkerData := webhook.NewWebhookData(paymentResp.YouKassaModel.ID, paymentResp.TransactionId)
+	_ = webhook.StartCheck(checkerData, paymentResp.Status)
+
 	log.Info("response to frontend successfully sent")
 
-	logToDb := postgres.NewLog(paymentResp.ID, req.Amount.Value, paymentResp.Status)
+	logToDb := postgres.NewLog(paymentRespFromYoukassa.ID, req.Amount.Value, string(paymentRespFromYoukassa.Status))
 
 	err = h.logWriter.InsertLog(logToDb)
 	if err != nil {
@@ -183,7 +175,7 @@ func (h *PaymentHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	log.Info("log to db successfully written")
 
 	// Send response to Frontend
-	myJson.Write(w, http.StatusOK, paymentResp)
+	myJson.Write(w, http.StatusOK, paymentRespFromYoukassa)
 }
 
 func createPaymentBody(create *Create) *CreatePaymentRequest {
@@ -206,7 +198,7 @@ func sendRequest(createReq *CreatePaymentRequest) (*http.Response, error) {
 	}
 	apiReq, err := http.NewRequest(
 		"POST",
-		PAYMENTS_API+PAYMENTS_ENDPOINT,
+		metrics.PaymentsApi+metrics.PaymentsEndpoint,
 		bytes.NewBuffer(createReqJson),
 	)
 	if err != nil {
@@ -214,7 +206,7 @@ func sendRequest(createReq *CreatePaymentRequest) (*http.Response, error) {
 	}
 	idempotenceKey := uuid.New().String()
 
-	apiReq.SetBasicAuth(storeID, secretKey)
+	apiReq.SetBasicAuth(metrics.GetConfirmationData())
 	apiReq.Header.Set("Idempotence-Key", idempotenceKey)
 	apiReq.Header.Set("Content-Type", "application/json")
 

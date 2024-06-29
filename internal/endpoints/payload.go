@@ -1,4 +1,4 @@
-package metrics
+package endpoints
 
 import (
 	"bytes"
@@ -11,8 +11,10 @@ import (
 	"log/slog"
 	"net/http"
 
+	"github.com/imperatorofdwelling/Website-backend/internal/metrics"
+	_ "github.com/imperatorofdwelling/Website-backend/internal/metrics"
 	"github.com/imperatorofdwelling/Website-backend/internal/models"
-
+	"github.com/imperatorofdwelling/Website-backend/internal/webhook"
 	myJson "github.com/imperatorofdwelling/Website-backend/pkg/json"
 
 	"github.com/imperatorofdwelling/Website-backend/pkg/repository/postgres"
@@ -34,8 +36,8 @@ type SaveCard struct {
 
 // SaveCardResponse response to frontend
 type SaveCardResponse struct {
-	Status Status `json:"status"`
-	Error  string `json:"error"`
+	Status metrics.Status `json:"status"`
+	Error  string         `json:"error"`
 }
 
 func (c SaveCard) isFullData() bool {
@@ -120,9 +122,11 @@ func SaveCardHandler(log *slog.Logger) http.HandlerFunc {
 	}
 }
 
+// ****************
 // ________________
 // Payout
 // ________________
+// ****************
 
 const (
 	DefaultDescription = "From ImperatorOfDwelling for renting an apartment."
@@ -154,11 +158,28 @@ type PayloadRequestKassa struct {
 
 // YooKassaPayloadModel YooKassa payload model
 type YooKassaPayloadModel struct {
-	Amount      Amount    `json:"amount"`
-	Status      Status    `json:"status"`
-	Description string    `json:"description"`
-	CreatedAt   time.Time `json:"created_at"`
-	Test        bool      `json:"test"`
+	ID          string         `json:"id"`
+	Amount      Amount         `json:"amount"`
+	Status      metrics.Status `json:"status"`
+	Description string         `json:"description"`
+	CreatedAt   time.Time      `json:"created_at"`
+	Test        bool           `json:"test"`
+}
+
+// PayloadAnswer AnswerToFrontend
+type PayloadAnswer struct {
+	TransactionId uuid.UUID             `json:"transaction_id"`
+	Status        metrics.Status        `json:"status"`
+	YouKassaModel *YooKassaPayloadModel `json:"you_kassa_payload_model"`
+}
+
+func NewPayloadAnswer(youKassaModel *YooKassaPayloadModel) *PayloadAnswer {
+	newUUID, _ := uuid.NewUUID()
+	return &PayloadAnswer{
+		TransactionId: newUUID,
+		Status:        youKassaModel.Status,
+		YouKassaModel: youKassaModel,
+	}
 }
 
 func Payload(log *slog.Logger) http.HandlerFunc {
@@ -239,10 +260,10 @@ func Payload(log *slog.Logger) http.HandlerFunc {
 			return
 		}
 
-		paymentResp := new(YooKassaPayloadModel)
+		youkassaResp := new(YooKassaPayloadModel)
 
 		// Create JSON Response
-		if err := json.Unmarshal(respBody, paymentResp); err != nil {
+		if err := json.Unmarshal(respBody, youkassaResp); err != nil {
 			log.Error(
 				"failed to make json from response",
 				slog.String("error", err.Error()),
@@ -251,16 +272,21 @@ func Payload(log *slog.Logger) http.HandlerFunc {
 			return
 		}
 
-		// Send response to Frontend
-		myJson.Write(w, http.StatusOK, paymentResp)
+		payloadResp := NewPayloadAnswer(youkassaResp)
+		checkerData := webhook.NewWebhookData(payloadResp.YouKassaModel.ID, payloadResp.TransactionId)
+		_ = webhook.StartCheck(checkerData, payloadResp.Status)
+
+		//Send response to Frontend
+		myJson.Write(w, http.StatusOK, payloadResp)
+
+		if payloadResp.Status == metrics.Pending {
+
+		}
 
 		log.Info("response to frontend successfully sent")
 
 	}
 }
-
-// toUserID := create.ToUserId
-//	db, isContains := repository.GetDB()
 
 func createPayloadBody(c *PayoutRequestEndpoint, cardSynonym string) *PayloadRequestKassa {
 	createReq := &PayloadRequestKassa{
@@ -278,7 +304,7 @@ func sendPayloadRequest(r *PayloadRequestKassa) (*http.Response, error) {
 	}
 	apiReq, err := http.NewRequest(
 		"POST",
-		PAYMENTS_API+PAYOUTS_ENDPOINT,
+		metrics.PaymentsApi+metrics.PayoutsEndpoint,
 		bytes.NewBuffer(createReqJson),
 	)
 	if err != nil {
@@ -286,7 +312,7 @@ func sendPayloadRequest(r *PayloadRequestKassa) (*http.Response, error) {
 	}
 	idempotenceKey := uuid.New().String()
 
-	apiReq.SetBasicAuth(storeID, secretKey)
+	apiReq.SetBasicAuth(metrics.GetConfirmationData())
 	apiReq.Header.Set("Idempotence-Key", idempotenceKey)
 	apiReq.Header.Set("Content-Type", "application/json")
 
