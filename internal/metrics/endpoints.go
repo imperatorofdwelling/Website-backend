@@ -7,7 +7,6 @@ import (
 	"github.com/google/uuid"
 	myJson "github.com/https-whoyan/dwellingPayload/pkg/json"
 	"github.com/https-whoyan/dwellingPayload/pkg/repository"
-	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -143,21 +142,10 @@ func (h *PaymentHandler) Payment(w http.ResponseWriter, r *http.Request) {
 
 	defer resp.Body.Close()
 
-	// Read response
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Error(
-			"failed to read response",
-			slog.String("error", err.Error()),
-		)
-		myJson.Write(w, http.StatusInternalServerError, NewErrorResponse("server error"))
-		return
-	}
-
 	paymentResp := new(PaymentResponse)
 
-	// Create JSON Response
-	if err := json.Unmarshal(respBody, paymentResp); err != nil {
+	// Read response
+	if err := json.NewDecoder(resp.Body).Decode(paymentResp); err != nil {
 		log.Error(
 			"failed to make json from response",
 			slog.String("error", err.Error()),
