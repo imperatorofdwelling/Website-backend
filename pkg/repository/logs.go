@@ -10,11 +10,12 @@ type Log struct {
 	Time          time.Time `json:"time"`
 }
 
-func NewLog(id string, amount string, status string) *Log {
+func NewLog(id string, amount string, status string, time time.Time) *Log {
 	return &Log{
 		TransactionID: id,
 		Amount:        amount,
 		Status:        status,
+		Time:          time,
 	}
 }
 

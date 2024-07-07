@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 )
 
 const (
@@ -182,7 +183,16 @@ func (h *PaymentHandler) Payment(w http.ResponseWriter, r *http.Request) {
 
 	log.Info("response to frontend successfully sent")
 
-	logToDb := repository.NewLog(paymentResp.ID, req.Amount.Value, paymentResp.Status)
+	createdAt, err := time.Parse(time.RFC3339, paymentResp.CreatedAt)
+	if err != nil {
+		log.Error(
+			"failed to parse timestamp",
+			slog.String("error", err.Error()),
+		)
+		myJson.Write(w, http.StatusInternalServerError, NewErrorResponse("server error"))
+		return
+	}
+	logToDb := repository.NewLog(paymentResp.ID, req.Amount.Value, paymentResp.Status, createdAt)
 
 	err = h.logWriter.InsertLog(logToDb)
 	if err != nil {
