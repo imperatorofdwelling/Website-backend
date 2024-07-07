@@ -40,8 +40,18 @@ func Init() {
 // Request from frontend
 
 type Create struct {
-	UserId string `json:"user_id"`
-	Amount Amount `json:"amount"`
+	UserId string `json:"user_id,omitempty"`
+	Amount Amount `json:"amount,omitempty"`
+}
+
+func NewCreate(userId string, val string, currency string) *Create {
+	return &Create{
+		UserId: userId,
+		Amount: Amount{
+			Value:    val,
+			Currency: currency,
+		},
+	}
 }
 
 // request to YoooKassa API
@@ -126,6 +136,12 @@ func (h *PaymentHandler) Payment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.UserId == "" || req.Amount.Value == "" || req.Amount.Currency == "" {
+		log.Error("failed to read request", slog.String("error", "userId or amount is empty"))
+		myJson.Write(w, http.StatusBadRequest, NewErrorResponse("userId or amount is empty"))
+		return
+	}
+
 	createReq := createPaymentBody(req)
 
 	resp, err := sendRequest(createReq)
@@ -151,6 +167,16 @@ func (h *PaymentHandler) Payment(w http.ResponseWriter, r *http.Request) {
 			slog.String("error", err.Error()),
 		)
 		myJson.Write(w, http.StatusInternalServerError, NewErrorResponse("server error"))
+		return
+	}
+
+	log.Info("Response", slog.Any("response", paymentResp))
+	// If status is empty, it's mean that request is bad (for ex. invalid currency or negative value)
+	if paymentResp.Status == "" {
+		log.Error("invalid response from API",
+			slog.String("description", paymentResp.Description),
+		)
+		myJson.Write(w, http.StatusBadRequest, NewErrorResponse(paymentResp.Description))
 		return
 	}
 

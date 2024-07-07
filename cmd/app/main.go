@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	cfg := config.LoadConfig()
+	cfg := config.LoadConfig("")
 	log := logger.New(logger.EnvLocal)
 	cfg.Run(log)
 }

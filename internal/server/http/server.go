@@ -42,15 +42,15 @@ func New(cfg *ServerConfig, log *slog.Logger, repo repository.LogRepository) *Se
 		ReadTimeout:  cfg.ReadTimeout,
 		WriteTimeout: cfg.WriteTimeout,
 		IdleTimeout:  cfg.IdleTimeout,
-		Handler:      newRouter(log, repo),
+		Handler:      NewRouter(log, repo),
 	}
 	return &Server{
 		srv: srv,
 	}
 }
 
-// Creating chi router
-func newRouter(log *slog.Logger, repo repository.LogRepository) http.Handler {
+// NewRouter Creating chi router
+func NewRouter(log *slog.Logger, repo repository.LogRepository) http.Handler {
 	r := chi.NewRouter()
 	// There we need to write endpoints and middlewares
 
@@ -61,7 +61,7 @@ func newRouter(log *slog.Logger, repo repository.LogRepository) http.Handler {
 
 	// We need db instance to work with it
 	payment := metrics.NewPaymentHandler(log, repo)
-	// TODO: names for endpoints
+
 	r.Post(
 		"/payment/create",
 		payment.Payment)

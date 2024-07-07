@@ -13,5 +13,6 @@ func Read(r *http.Request, s any) error {
 
 func Write(w http.ResponseWriter, status int, s any) error {
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
 	return json.NewEncoder(w).Encode(s)
 }

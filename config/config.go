@@ -12,12 +12,12 @@ import (
 )
 
 type Config struct {
-	Server            *http.ServerConfig            `yaml:"server"`
-	PostgresSQLConfig *repository.PostgresSQLConfig `yaml:"db"`
+	Server            *http.ServerConfig
+	PostgresSQLConfig *repository.PostgresSQLConfig
 }
 
-func LoadConfig() *Config {
-	err := loadDotEnv()
+func LoadConfig(envFilePath string) *Config {
+	err := loadDotEnv(envFilePath)
 	if err != nil {
 		//log Fatal by logger
 		log.Fatal(err)
@@ -68,7 +68,10 @@ func (c *Config) Disconnect(server *http.Server) {
 	}
 }
 
-func loadDotEnv() error {
-	err := godotenv.Load()
+func loadDotEnv(filePath string) error {
+	if filePath == "" {
+		filePath = ".env"
+	}
+	err := godotenv.Load(filePath)
 	return err
 }
