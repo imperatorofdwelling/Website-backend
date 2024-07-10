@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/https-whoyan/dwellingPayload/config"
-	"github.com/https-whoyan/dwellingPayload/pkg/logger"
+	"github.com/imperatorofdwelling/Website-backend/config"
+	"github.com/imperatorofdwelling/Website-backend/pkg/logger"
 )
 
 func main() {

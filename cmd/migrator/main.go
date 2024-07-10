@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/golang-migrate/migrate/v4"
-	"github.com/https-whoyan/dwellingPayload/config"
+	"github.com/imperatorofdwelling/Website-backend/config"
 	"log"
 )
 
@@ -13,7 +13,7 @@ const (
 )
 
 func main() {
-	cfg := config.LoadConfig()
+	cfg := config.LoadConfig("")
 	dbCfg := cfg.PostgresSQLConfig
 
 	url := fmt.Sprintf(

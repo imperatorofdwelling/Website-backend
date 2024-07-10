@@ -1,19 +1,23 @@
 package config
 
 import (
-	"github.com/https-whoyan/dwellingPayload/internal/metrics"
 	"log"
+
 	"log/slog"
 
-	"github.com/joho/godotenv"
+	"github.com/imperatorofdwelling/Website-backend/internal/metrics"
+	"github.com/imperatorofdwelling/Website-backend/internal/server/http"
 
-	"github.com/https-whoyan/dwellingPayload/internal/server/http"
-	"github.com/https-whoyan/dwellingPayload/pkg/repository"
+	"github.com/imperatorofdwelling/Website-backend/pkg/repository/postgres"
+	"github.com/imperatorofdwelling/Website-backend/pkg/repository/redis"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	Server            *http.ServerConfig
-	PostgresSQLConfig *repository.PostgresSQLConfig
+	Server            *http.ServerConfig          `yaml:"server"`
+	PostgresSQLConfig *postgres.PostgresSQLConfig `yaml:"db"`
+	RedisConfig       *redis.RedisConfig          `yaml:"redis"`
 }
 
 func LoadConfig(envFilePath string) *Config {
@@ -27,7 +31,7 @@ func LoadConfig(envFilePath string) *Config {
 		//log Fatal by logger
 		log.Fatal(err)
 	}
-	postgresSQLConfig, err := repository.LoadConfig()
+	postgresSQLConfig, err := postgres.LoadConfig()
 	if err != nil {
 		//log Fatal by logger
 		log.Fatal(err)
@@ -40,13 +44,19 @@ func LoadConfig(envFilePath string) *Config {
 }
 
 func (c *Config) Run(logger *slog.Logger) {
-	err := repository.InitPostgresDB(c.PostgresSQLConfig)
+	// PostgresSQL
+	err := postgres.InitPostgresDB(c.PostgresSQLConfig)
 	if err != nil {
 		//log Fatal by logger
 		log.Fatal(err)
 	}
-	db, _ := repository.GetDB()
-	repo := repository.NewLogRepository(db)
+	db, _ := postgres.GetDB()
+	repo := postgres.NewLogRepository(db)
+	// Redis
+	err = redis.InitRedis(c.RedisConfig)
+	if err != nil {
+		log.Fatal(err)
+	}
 	// To init storeId and secretKey from .env
 	metrics.Init()
 	srv := http.New(c.Server, logger, repo)
@@ -56,9 +66,13 @@ func (c *Config) Run(logger *slog.Logger) {
 }
 
 func (c *Config) Disconnect(server *http.Server) {
-	err := repository.Disconnect()
+	err := postgres.Disconnect()
 	if err != nil {
 		// Log print by logger
+		log.Println(err)
+	}
+	err = redis.Disconnect()
+	if err != nil {
 		log.Println(err)
 	}
 	err = server.Disconnect()

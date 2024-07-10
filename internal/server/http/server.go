@@ -1,14 +1,17 @@
 package http
 
 import (
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/https-whoyan/dwellingPayload/internal/metrics"
-	"github.com/https-whoyan/dwellingPayload/pkg/repository"
 	"log"
+	"time"
+
 	"log/slog"
 	"net/http"
-	"time"
+
+	"github.com/imperatorofdwelling/Website-backend/internal/endpoints"
+	"github.com/imperatorofdwelling/Website-backend/pkg/repository/postgres"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 type ServerConfig struct {
@@ -36,7 +39,7 @@ type Server struct {
 	srv *http.Server
 }
 
-func New(cfg *ServerConfig, log *slog.Logger, repo repository.LogRepository) *Server {
+func New(cfg *ServerConfig, log *slog.Logger, repo postgres.LogRepository) *Server {
 	srv := &http.Server{
 		Addr:         cfg.Addr,
 		ReadTimeout:  cfg.ReadTimeout,
@@ -50,7 +53,7 @@ func New(cfg *ServerConfig, log *slog.Logger, repo repository.LogRepository) *Se
 }
 
 // NewRouter Creating chi router
-func NewRouter(log *slog.Logger, repo repository.LogRepository) http.Handler {
+func NewRouter(log *slog.Logger, repo postgres.LogRepository) http.Handler {
 	r := chi.NewRouter()
 	// There we need to write endpoints and middlewares
 
@@ -60,8 +63,8 @@ func NewRouter(log *slog.Logger, repo repository.LogRepository) http.Handler {
 	r.Use(middleware.Recoverer)
 
 	// We need db instance to work with it
-	payment := metrics.NewPaymentHandler(log, repo)
-
+	payment := endpoints.NewPaymentHandler(log, repo)
+	// TODO: names for endpoints
 	r.Post(
 		"/payment/create",
 		payment.Payment)
