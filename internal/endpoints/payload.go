@@ -56,70 +56,79 @@ func (c SaveCard) isFullData() bool {
 	return firstSixIsContainsOfDigits && lastFourIsContainsOfDigits
 }
 
-func SaveCardHandler(log *slog.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+type SaveCardHandler struct {
+	log       *slog.Logger
+	logWriter postgres.LogRepository
+}
 
-		const fn = "endpoints.SaveCardHandler"
-
-		log = log.With(slog.String("fn", fn))
-		log.Debug("safe card endpoint called")
-
-		c := new(SaveCard)
-
-		if err := myJson.Read(r, c); err != nil {
-			log.Error("failed to read request", slog.String("error", err.Error()))
-			myJson.Write(w, http.StatusBadRequest, NewErrorResponse("bad request"))
-			return
-		}
-		if !c.isFullData() {
-			myJson.Write(w, http.StatusBadRequest, NewErrorResponse("bad request, not full data"))
-			return
-		}
-
-		usedUUID, _ := uuid.Parse(c.UserId)
-		insertedUsed := models.User{
-			Id:      usedUUID,
-			Balance: 0,
-		}
-		cardMask, _ := models.GenerateCardMask(c.FirstSix, c.LastFour)
-		insertedCard := models.NewRefillableCard(&insertedUsed, c.Synonym, cardMask)
-
-		db, isContains := postgres.GetDB()
-		if !isContains {
-			log.Error("failed to get database")
-			myJson.Write(w, http.StatusInternalServerError, NewErrorResponse(
-				"Internal server error, database isn't initialized"))
-			return
-		}
-		isUpdated, err := db.InsertOrUpdateRefillableCard(insertedCard)
-		if err != nil {
-			log.Error("failed to insert or update refillable card", slog.String("error", err.Error()))
-			myJson.Write(w, http.StatusInternalServerError, NewErrorResponse(
-				"Internal server error!"))
-			return
-		}
-
-		var messageToLog string
-		if isUpdated {
-			messageToLog = fmt.Sprintf("Card info updated successfully, userID: %v", c.UserId)
-		} else {
-			messageToLog = fmt.Sprintf("Card info insert successfully, userID: %v", c.UserId)
-		}
-
-		log.Info(messageToLog)
-
-		// Create JSON Response
-		backendResponse := SaveCardResponse{
-			Status: "success",
-			Error:  "",
-		}
-
-		// Send response to Frontend
-		myJson.Write(w, http.StatusOK, backendResponse)
-
-		log.Info("response to frontend successfully sent")
-
+func NewSaveCardHandler(log *slog.Logger, db postgres.LogRepository) *SaveCardHandler {
+	return &SaveCardHandler{
+		log:       log,
+		logWriter: db,
 	}
+}
+
+func (h SaveCardHandler) SaveCard(w http.ResponseWriter, r *http.Request) {
+	const fn = "endpoints.SaveCardHandler"
+
+	log := h.log.With(slog.String("fn", fn))
+	log.Debug("safe card endpoint called")
+
+	c := new(SaveCard)
+
+	if err := myJson.Read(r, c); err != nil {
+		log.Error("failed to read request", slog.String("error", err.Error()))
+		myJson.Write(w, http.StatusBadRequest, NewErrorResponse("bad request"))
+		return
+	}
+	if !c.isFullData() {
+		myJson.Write(w, http.StatusBadRequest, NewErrorResponse("bad request, not full data"))
+		return
+	}
+
+	usedUUID, _ := uuid.Parse(c.UserId)
+	insertedUsed := models.User{
+		Id:      usedUUID,
+		Balance: 0,
+	}
+	cardMask, _ := models.GenerateCardMask(c.FirstSix, c.LastFour)
+	insertedCard := models.NewRefillableCard(&insertedUsed, c.Synonym, cardMask)
+
+	db, isContains := postgres.GetDB()
+	if !isContains {
+		log.Error("failed to get database")
+		myJson.Write(w, http.StatusInternalServerError, NewErrorResponse(
+			"Internal server error, database isn't initialized"))
+		return
+	}
+	isUpdated, err := db.InsertOrUpdateRefillableCard(insertedCard)
+	if err != nil {
+		log.Error("failed to insert or update refillable card", slog.String("error", err.Error()))
+		myJson.Write(w, http.StatusInternalServerError, NewErrorResponse(
+			"Internal server error!"))
+		return
+	}
+
+	var messageToLog string
+	if isUpdated {
+		messageToLog = fmt.Sprintf("Card info updated successfully, userID: %v", c.UserId)
+	} else {
+		messageToLog = fmt.Sprintf("Card info insert successfully, userID: %v", c.UserId)
+	}
+
+	log.Info(messageToLog)
+
+	// Create JSON Response
+	backendResponse := SaveCardResponse{
+		Status: "success",
+		Error:  "",
+	}
+
+	// Send response to Frontend
+	myJson.Write(w, http.StatusOK, backendResponse)
+
+	log.Info("response to frontend successfully sent")
+
 }
 
 // ****************
@@ -182,110 +191,119 @@ func NewPayloadAnswer(youKassaModel *YooKassaPayloadModel) *PayloadAnswer {
 	}
 }
 
-func Payload(log *slog.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+type PayloadHandler struct {
+	log       *slog.Logger
+	logWriter postgres.LogRepository
+}
 
-		const fn = "endpoints.Payload"
+func NewPayloadHandler(log *slog.Logger, logWriter postgres.LogRepository) *PayloadHandler {
+	return &PayloadHandler{
+		log:       log,
+		logWriter: logWriter,
+	}
+}
 
-		log = log.With(slog.String("fn", fn))
-		log.Debug("payload endpoint called")
+func (h *PayloadHandler) Payload(w http.ResponseWriter, r *http.Request) {
+	const fn = "endpoints.Payload"
 
-		req := new(PayoutRequestEndpoint)
+	log := h.log.With(slog.String("fn", fn))
+	log.Debug("payload endpoint called")
 
-		if err := myJson.Read(r, req); err != nil {
-			log.Error("failed to read request", slog.String("error", err.Error()))
-			myJson.Write(w, http.StatusBadRequest, NewErrorResponse("bad request"))
-			return
-		}
+	req := new(PayoutRequestEndpoint)
 
-		if !req.isFullData() {
-			myJson.Write(w, http.StatusBadRequest, NewErrorResponse("provided not full data"))
-			return
-		}
+	if err := myJson.Read(r, req); err != nil {
+		log.Error("failed to read request", slog.String("error", err.Error()))
+		myJson.Write(w, http.StatusBadRequest, NewErrorResponse("bad request"))
+		return
+	}
 
-		currDB, exists := postgres.GetDB()
-		if !exists {
-			log.Error("failed to get database")
-			myJson.Write(w, http.StatusInternalServerError,
-				NewErrorResponse("internal server error, database isn't initialized"),
-			)
-			return
-		}
+	if !req.isFullData() {
+		myJson.Write(w, http.StatusBadRequest, NewErrorResponse("provided not full data"))
+		return
+	}
 
-		uuidUser, err := uuid.Parse(req.ToUserId)
-		if err != nil {
-			log.Error("failed to parse userID from request", slog.String("error", err.Error()))
-			myJson.Write(w, http.StatusBadRequest, NewErrorResponse("bad request"))
-			return
-		}
-		row, err := currDB.GetRefillableCardByUserID(uuidUser)
-		cardSynonym := row.CardSynonym
-		if err != nil {
-			log.Error("failed to get database refillable card", slog.String("error", err.Error()))
-			myJson.Write(w, http.StatusInternalServerError, NewErrorResponse(
-				"internal server error, error getting mask card"),
-			)
-			return
-		}
-		if cardSynonym == "" {
-			log.Info("failed to get database refillable card", slog.String("error", err.Error()))
-			myJson.Write(w, http.StatusLocked, NewErrorResponse("the card is untethered for userID"))
-			return
-		}
+	currDB, exists := postgres.GetDB()
+	if !exists {
+		log.Error("failed to get database")
+		myJson.Write(w, http.StatusInternalServerError,
+			NewErrorResponse("internal server error, database isn't initialized"),
+		)
+		return
+	}
 
-		createReq := createPayloadBody(req, cardSynonym)
+	uuidUser, err := uuid.Parse(req.ToUserId)
+	if err != nil {
+		log.Error("failed to parse userID from request", slog.String("error", err.Error()))
+		myJson.Write(w, http.StatusBadRequest, NewErrorResponse("bad request"))
+		return
+	}
+	row, err := currDB.GetRefillableCardByUserID(uuidUser)
+	cardSynonym := row.CardSynonym
+	if err != nil {
+		log.Error("failed to get database refillable card", slog.String("error", err.Error()))
+		myJson.Write(w, http.StatusInternalServerError, NewErrorResponse(
+			"internal server error, error getting mask card"),
+		)
+		return
+	}
+	if cardSynonym == "" {
+		log.Info("failed to get database refillable card", slog.String("error", err.Error()))
+		myJson.Write(w, http.StatusLocked, NewErrorResponse("the card is untethered for userID"))
+		return
+	}
 
-		resp, err := sendPayloadRequest(createReq)
-		if err != nil {
-			log.Error(
-				"failed to send request to YooKassa API",
-				slog.String("error", err.Error()),
-			)
-			myJson.Write(w, http.StatusInternalServerError, NewErrorResponse("server error"))
-			return
-		}
+	createReq := createPayloadBody(req, cardSynonym)
 
-		log.Debug("request to API sent")
+	resp, err := sendPayloadRequest(createReq)
+	if err != nil {
+		log.Error(
+			"failed to send request to YooKassa API",
+			slog.String("error", err.Error()),
+		)
+		myJson.Write(w, http.StatusInternalServerError, NewErrorResponse("server error"))
+		return
+	}
 
-		defer resp.Body.Close()
+	log.Debug("request to API sent")
 
-		// Read response
-		respBody, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Error(
-				"failed to read response",
-				slog.String("error", err.Error()),
-			)
-			myJson.Write(w, http.StatusInternalServerError, NewErrorResponse("server error"))
-			return
-		}
+	defer resp.Body.Close()
 
-		youkassaResp := new(YooKassaPayloadModel)
+	// Read response
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Error(
+			"failed to read response",
+			slog.String("error", err.Error()),
+		)
+		myJson.Write(w, http.StatusInternalServerError, NewErrorResponse("server error"))
+		return
+	}
 
-		// Create JSON Response
-		if err := json.Unmarshal(respBody, youkassaResp); err != nil {
-			log.Error(
-				"failed to make json from response",
-				slog.String("error", err.Error()),
-			)
-			myJson.Write(w, http.StatusInternalServerError, NewErrorResponse("server error"))
-			return
-		}
+	youkassaResp := new(YooKassaPayloadModel)
 
-		payloadResp := NewPayloadAnswer(youkassaResp)
-		checkerData := webhook.NewWebhookData(payloadResp.YouKassaModel.ID, payloadResp.TransactionId)
-		_ = webhook.StartCheck(checkerData, payloadResp.Status)
+	// Create JSON Response
+	if err := json.Unmarshal(respBody, youkassaResp); err != nil {
+		log.Error(
+			"failed to make json from response",
+			slog.String("error", err.Error()),
+		)
+		myJson.Write(w, http.StatusInternalServerError, NewErrorResponse("server error"))
+		return
+	}
 
-		//Send response to Frontend
-		myJson.Write(w, http.StatusOK, payloadResp)
+	payloadResp := NewPayloadAnswer(youkassaResp)
+	checkerData := webhook.NewWebhookData(payloadResp.YouKassaModel.ID, payloadResp.TransactionId)
+	_ = webhook.StartCheck(checkerData, payloadResp.Status)
 
-		if payloadResp.Status == metrics.Pending {
+	//Send response to Frontend
+	myJson.Write(w, http.StatusOK, payloadResp)
 
-		}
-
-		log.Info("response to frontend successfully sent")
+	if payloadResp.Status == metrics.Pending {
 
 	}
+
+	log.Info("response to frontend successfully sent")
+
 }
 
 func createPayloadBody(c *PayoutRequestEndpoint, cardSynonym string) *PayloadRequestKassa {

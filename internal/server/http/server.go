@@ -64,10 +64,17 @@ func NewRouter(log *slog.Logger, repo postgres.LogRepository) http.Handler {
 
 	// We need db instance to work with it
 	payment := endpoints.NewPaymentHandler(log, repo)
-	// TODO: names for endpoints
+	saveCard := endpoints.NewSaveCardHandler(log, repo)
+	payload := endpoints.NewPayloadHandler(log, repo)
 	r.Post(
 		"/payment/create",
 		payment.Payment)
+	r.Post(
+		"/save_card",
+		saveCard.SaveCard)
+	r.Post(
+		"/payload/create",
+		payload.Payload)
 
 	return r
 }

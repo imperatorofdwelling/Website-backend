@@ -67,15 +67,11 @@ func (db *PostgresDB) InsertNewRefillableCard(card *models.RefillableCard) (*Ref
 	query := getInsertQueryOfRefillableCard(card)
 	db.Lock()
 	defer db.Unlock()
-	infoAboutExecute, err := db.db.Exec(query)
+	_, err := db.db.Exec(query)
 	if err != nil {
 		return nil, err
 	}
-	lastID, err := infoAboutExecute.LastInsertId()
-	if err != nil {
-		return nil, err
-	}
-	return db.getRefillableCardByRowID(lastID)
+	return db.GetRefillableCardByUserID(card.Owner.Id)
 }
 
 func (db *PostgresDB) InsertOrUpdateRefillableCard(card *models.RefillableCard) (isUpdated bool, err error) {
@@ -87,13 +83,16 @@ func (db *PostgresDB) InsertOrUpdateRefillableCard(card *models.RefillableCard) 
 	}
 
 	result, err := db.GetRefillableCardByUser(card.Owner)
-	if result == nil || err != nil {
-		_, err = db.UpdateRefillableCardInfo(card)
-		return true, err
+	if err != nil {
+		return false, err
+	}
+	if result == nil {
+		_, err = db.InsertNewRefillableCard(card)
+		return false, err
 	}
 
-	_, err = db.InsertNewRefillableCard(card)
-	return false, err
+	_, err = db.UpdateRefillableCardInfo(card)
+	return true, err
 }
 
 func (db *PostgresDB) GetRefillableCardByUser(user *models.User) (*RefillableCardDBRow, error) {
@@ -126,9 +125,8 @@ func (db *PostgresDB) GetRefillableCardByUserID(userId uuid.UUID) (*RefillableCa
 	executedQuery := getSelectQueryByUserID(userId)
 	// Lock, defer unlock
 	if db.TryLock() {
-		db.Lock()
+		defer db.Unlock()
 	}
-	defer db.Unlock()
 	rows, err := db.db.Query(executedQuery)
 	if err != nil {
 		return nil, err
@@ -139,15 +137,15 @@ func (db *PostgresDB) GetRefillableCardByUserID(userId uuid.UUID) (*RefillableCa
 	if !copyRow.Next() {
 		return nil, nil
 	}
-	var row *RefillableCardDBRow
-	err = rows.Scan(row.Id,
-		row.UserId,
-		row.CardSynonym,
-		row.CardMask)
+	row := RefillableCardDBRow{}
+	err = rows.Scan(&row.Id,
+		&row.UserId,
+		&row.CardSynonym,
+		&row.CardMask)
 	if err != nil {
 		return nil, err
 	}
-	return row, err
+	return &row, err
 }
 
 func getSelectQueryByRowID(rowID int64) string {
@@ -172,23 +170,22 @@ func (db *PostgresDB) getRefillableCardByRowID(rowId int64) (*RefillableCardDBRo
 	executedQuery := getSelectQueryByRowID(rowId)
 	// Lock, defer unlock
 	if db.TryLock() {
-		db.Lock()
+		defer db.Unlock()
 	}
-	defer db.Unlock()
 	rows, err := db.db.Query(executedQuery)
 	if err != nil {
 		return nil, err
 	}
 
-	var row *RefillableCardDBRow
-	err = rows.Scan(row.Id,
-		row.UserId,
-		row.CardSynonym,
-		row.CardMask)
+	row := RefillableCardDBRow{}
+	err = rows.Scan(&row.Id,
+		&row.UserId,
+		&row.CardSynonym,
+		&row.CardMask)
 	if err != nil {
 		return nil, err
 	}
-	return row, err
+	return &row, err
 }
 
 func getUpdateQuery(card *models.RefillableCard) string {
@@ -224,9 +221,8 @@ func (db *PostgresDB) UpdateRefillableCardInfo(card *models.RefillableCard) (
 	rowID := result.Id
 	executedQuery := getUpdateQuery(card)
 	if db.TryLock() {
-		db.Lock()
+		defer db.Unlock()
 	}
-	defer db.Unlock()
 	_, err = db.db.Exec(executedQuery)
 	if err != nil {
 		return nil, err
