@@ -17,20 +17,20 @@ const (
 )
 
 type PostgresSQLConfig struct {
-	DBHost     string `yaml:"db_host"`
-	DBPort     string `yaml:"db_port"`
-	DBUsername string `yaml:"db_username"`
-	DBPassword string `yaml:"db_password"`
-	DBName     string `yaml:"db_name"`
-	DBSSLMode  string `yaml:"dbssl_mode"`
+	DBHost     string
+	DBPort     string
+	DBUsername string
+	DBPassword string
+	DBName     string
+	DBSSLMode  string
 }
 
 func LoadConfig() (*PostgresSQLConfig, error) {
-	host := os.Getenv("POSTGRES_DB_HOST")
-	port := os.Getenv("POSTGRES_DB_PORT")
-	user := os.Getenv("POSTGRES_DB_USER")
-	pass := os.Getenv("POSTGRES_DB_PASS")
-	dbName := os.Getenv("POSTGRES_DB_DBName")
+	host := os.Getenv("POSTGRES_HOST")
+	port := os.Getenv("POSTGRES_PORT")
+	user := os.Getenv("POSTGRES_USER")
+	pass := os.Getenv("POSTGRES_PASSWORD")
+	dbName := os.Getenv("POSTGRES_DB")
 	sslMode := os.Getenv("POSTGRES_DB_SSL")
 
 	return &PostgresSQLConfig{

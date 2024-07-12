@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	migrationsPath = "./pkg/repository/migrations"
+	migrationsPath = "./pkg/repository/postgres/migrations"
 )
 
 func main() {
@@ -30,6 +30,8 @@ func main() {
 		url,
 	)
 	if err != nil {
+		log.Printf("%+v\n", dbCfg)
+		log.Println("failed to connect to DB")
 		log.Fatal(err)
 	}
 	if err := m.Up(); err != nil {

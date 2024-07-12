@@ -22,14 +22,16 @@ type RedisConfig struct {
 func LoadRedisConfig() (*RedisConfig, error) {
 	host := os.Getenv("REDIS_DB_HOST")
 	port := os.Getenv("REDIS_DB_PORT")
+	password := os.Getenv("REDIS_DB_PASSWORD")
 	db, err := strconv.Atoi(os.Getenv("REDIS_DB_DB"))
 	if err != nil {
 		return nil, err
 	}
 	return &RedisConfig{
-		Host: host,
-		Port: port,
-		DB:   db,
+		Host:     host,
+		Port:     port,
+		DB:       db,
+		Password: password,
 	}, nil
 }
 

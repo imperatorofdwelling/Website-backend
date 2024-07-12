@@ -3,7 +3,6 @@ package endpoints
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 	"log/slog"
 	"net/http"
 	"time"
@@ -176,31 +175,23 @@ func (h *PaymentHandler) Payment(w http.ResponseWriter, r *http.Request) {
 
 	createdAt, err := time.Parse(time.RFC3339, responseFromYooKassa.CreatedAt)
 	if err != nil {
-		return
-	}
-	// Create JSON Response
-
-	paymentRespFromYoukassa := new(PaymentResponse)
-
-	respBody, err := io.ReadAll(resp.Body)
-	if err := json.Unmarshal(respBody, paymentRespFromYoukassa); err != nil {
 		log.Error(
 			"failed to parse timestamp",
 			slog.String("error", err.Error()),
 		)
-		myJson.Write(w, http.StatusInternalServerError, NewErrorResponse("server error"))
 		return
 	}
+
 	logToDb := postgres.NewLog(responseFromYooKassa.ID, req.Amount.Value, string(responseFromYooKassa.Status), createdAt)
 
-	paymentResp := NewPaymentAnswer(paymentRespFromYoukassa)
+	paymentResp := NewPaymentAnswer(responseFromYooKassa)
 	checkerData := webhook.NewWebhookData(paymentResp.YouKassaModel.ID, paymentResp.TransactionId)
 	_ = webhook.StartCheck(checkerData, paymentResp.Status)
 
 	log.Info("response to frontend successfully sent")
 
-	logToDb = postgres.NewLog(paymentRespFromYoukassa.ID, req.Amount.Value,
-		string(paymentRespFromYoukassa.Status), createdAt)
+	logToDb = postgres.NewLog(responseFromYooKassa.ID, req.Amount.Value,
+		string(responseFromYooKassa.Status), createdAt)
 
 	err = h.logWriter.InsertLog(logToDb)
 	if err != nil {
@@ -211,7 +202,7 @@ func (h *PaymentHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	log.Info("log to db successfully written")
 
 	// Send response to Frontend
-	myJson.Write(w, http.StatusOK, paymentRespFromYoukassa)
+	myJson.Write(w, http.StatusOK, responseFromYooKassa)
 }
 
 func createPaymentBody(create *Create) *CreatePaymentRequest {
