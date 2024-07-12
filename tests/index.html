@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://yookassa.ru/payouts-data/3.1.0/widget.js"></script>
+    <!--HTML-элемент, в котором будет отображаться форма ввода номера карты-->
+    <div id="payout-form"></div>
+
+    <script>
+        // Инициализация виджета. Все параметры обязательные.
+        const payoutsData = new window.PayoutsData({
+            type: 'payout',
+            account_id: 'test_EVKNXQuiKLx003G4ORx1q4MKGngqQj-HANqE2ncOjig', // Идентификатор шлюза (agentId в личном кабинете)
+            success_callback: function(data) {
+                console.log(data)
+            },
+            error_callback: function(error) {
+                console.log(error)
+            }
+        });
+
+        // Отображение формы в контейнере
+        payoutsData.render('payout-form')
+            // Метод возвращает Promise, исполнение которого говорит о полной загрузке формы сбора данных (можно не использовать).
+            .then(() => {
+                // Код, который нужно выполнить после отображения формы.
+            });
+    </script>
+</head>
+<body>
+
+</body>
+</html>

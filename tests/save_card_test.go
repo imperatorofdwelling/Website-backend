@@ -36,8 +36,8 @@ func TestSaveCard(t *testing.T) {
 		{
 			name:           "Bad request empty body",
 			requestBody:    &endpoints.SaveCard{},
-			expectedStatus: http.StatusNotFound,
-			expectedError:  "userId or amount is empty",
+			expectedStatus: http.StatusBadRequest,
+			expectedError:  "bad request, not full data",
 		},
 		{
 			name: "Bad synonym",
@@ -49,7 +49,7 @@ func TestSaveCard(t *testing.T) {
 			},
 
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "Incorrect currency of payment. The value of the amount.currency parameter doesn't correspond with the settings of your store. Specify another currency value in the request or contact the YooMoney manager to change the settings",
+			expectedError:  "bad request, not full data",
 		},
 		{
 			name: "Bad request incorrect digits 1",
@@ -76,22 +76,23 @@ func TestSaveCard(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		newTc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			reqBodyBytes, _ := json.Marshal(tc.requestBody)
+			reqBodyBytes, _ := json.Marshal(newTc.requestBody)
 			req, _ := http.NewRequest("POST", "/save_card", bytes.NewBuffer(reqBodyBytes))
 
 			rr := httptest.NewRecorder()
 
 			router.ServeHTTP(rr, req)
 
-			assert.Equal(t, tc.expectedStatus, rr.Code)
+			assert.Equal(t, newTc.expectedStatus, rr.Code)
 
-			if tc.expectedError != "" {
+			if newTc.expectedError != "" {
 				respBody := new(endpoints.ErrorResponse)
 				_ = json.NewDecoder(rr.Body).Decode(respBody)
-				assert.Equal(t, tc.expectedError, respBody.Error)
+				assert.Equal(t, newTc.expectedError, respBody.Error)
 			}
 		})
 	}

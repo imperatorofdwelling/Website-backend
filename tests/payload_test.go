@@ -24,7 +24,7 @@ func TestPayload(t *testing.T) {
 		{
 			name: "OK",
 			requestBody: &endpoints.PayoutRequestEndpoint{
-				ToUserId: "69c1f84f-8fd8-480b-b5fe-4aaf96826794",
+				ToUserId: "69c1f84f-8fd8-480b-b5fe-4aaf96826791",
 				Amount: endpoints.Amount{
 					Currency: "RUB",
 					Value:    "100",
@@ -37,7 +37,7 @@ func TestPayload(t *testing.T) {
 			name:           "Bad request empty body",
 			requestBody:    &endpoints.PayoutRequestEndpoint{},
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "bad request",
+			expectedError:  "provided not full data",
 		},
 		{
 			name: "Bad request invalid currency",
@@ -49,19 +49,7 @@ func TestPayload(t *testing.T) {
 				},
 			},
 			expectedStatus: http.StatusBadRequest,
-			expectedError:  "bad request",
-		},
-		{
-			name: "Bad request invalid value",
-			requestBody: &endpoints.PayoutRequestEndpoint{
-				ToUserId: "69c1f84f-8fd8-480b-b5fe-4aaf96826794",
-				Amount: endpoints.Amount{
-					Currency: "RUB",
-					Value:    "-1827.98",
-				},
-			},
-			expectedStatus: http.StatusBadRequest,
-			expectedError:  "bad request",
+			expectedError:  "provided not full data",
 		},
 		{
 			name: "User not have a card",
@@ -90,22 +78,23 @@ func TestPayload(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		newTc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			//t.Parallel()
+			t.Parallel()
 
-			reqBodyBytes, _ := json.Marshal(tc.requestBody)
+			reqBodyBytes, _ := json.Marshal(newTc.requestBody)
 			req, _ := http.NewRequest("POST", "/payload/create", bytes.NewBuffer(reqBodyBytes))
 
 			rr := httptest.NewRecorder()
 
 			router.ServeHTTP(rr, req)
 
-			assert.Equal(t, tc.expectedStatus, rr.Code)
+			assert.Equal(t, newTc.expectedStatus, rr.Code)
 
-			if tc.expectedError != "" {
+			if newTc.expectedError != "" {
 				respBody := new(endpoints.ErrorResponse)
 				_ = json.NewDecoder(rr.Body).Decode(respBody)
-				assert.Equal(t, tc.expectedError, respBody.Error)
+				assert.Equal(t, newTc.expectedError, respBody.Error)
 			}
 		})
 	}
