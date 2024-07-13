@@ -8,7 +8,9 @@ import (
 	"net/http"
 
 	"github.com/imperatorofdwelling/Website-backend/internal/endpoints"
+	"github.com/imperatorofdwelling/Website-backend/internal/webhook"
 	"github.com/imperatorofdwelling/Website-backend/pkg/repository/postgres"
+	"github.com/imperatorofdwelling/Website-backend/pkg/repository/redis"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -39,21 +41,21 @@ type Server struct {
 	srv *http.Server
 }
 
-func New(cfg *ServerConfig, log *slog.Logger, repo postgres.LogRepository) *Server {
-	srv := &http.Server{
-		Addr:         cfg.Addr,
-		ReadTimeout:  cfg.ReadTimeout,
-		WriteTimeout: cfg.WriteTimeout,
-		IdleTimeout:  cfg.IdleTimeout,
-		Handler:      NewRouter(log, repo),
-	}
-	return &Server{
-		srv: srv,
-	}
+func New(cfg *ServerConfig, log *slog.Logger, repo postgres.LogRepository, redisDB redis.RedisInterface) *Server {
+    srv := &http.Server{
+        Addr:         cfg.Addr,
+        ReadTimeout:  cfg.ReadTimeout,
+        WriteTimeout: cfg.WriteTimeout,
+        IdleTimeout:  cfg.IdleTimeout,
+        Handler:      NewRouter(log, repo, redisDB),
+    }
+    return &Server{
+        srv: srv,
+    }
 }
 
 // NewRouter Creating chi router
-func NewRouter(log *slog.Logger, repo postgres.LogRepository) http.Handler {
+func NewRouter(log *slog.Logger, repo postgres.LogRepository, redisDB redis.RedisInterface) http.Handler {
 	r := chi.NewRouter()
 	// There we need to write endpoints and middlewares
 
@@ -62,10 +64,13 @@ func NewRouter(log *slog.Logger, repo postgres.LogRepository) http.Handler {
 	r.Use(middleware.DefaultLogger)
 	r.Use(middleware.Recoverer)
 
+	// Create Checker
+	checker := webhook.NewChecker(redisDB)
+
 	// We need db instance to work with it
-	payment := endpoints.NewPaymentHandler(log, repo)
+	payment := endpoints.NewPaymentHandler(log, repo, checker)
 	saveCard := endpoints.NewSaveCardHandler(log, repo)
-	payload := endpoints.NewPayloadHandler(log, repo)
+	payload := endpoints.NewPayloadHandler(log, repo, checker)
 	r.Post(
 		"/payment/create",
 		payment.Payment)

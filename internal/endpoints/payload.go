@@ -194,12 +194,14 @@ func NewPayloadAnswer(youKassaModel *YooKassaPayloadModel) *PayloadAnswer {
 type PayloadHandler struct {
 	log       *slog.Logger
 	logWriter postgres.LogRepository
+	checker   *webhook.Checker
 }
 
-func NewPayloadHandler(log *slog.Logger, logWriter postgres.LogRepository) *PayloadHandler {
+func NewPayloadHandler(log *slog.Logger, logWriter postgres.LogRepository, checker *webhook.Checker) *PayloadHandler {
 	return &PayloadHandler{
 		log:       log,
 		logWriter: logWriter,
+		checker:   checker,
 	}
 }
 
@@ -293,7 +295,7 @@ func (h *PayloadHandler) Payload(w http.ResponseWriter, r *http.Request) {
 
 	payloadResp := NewPayloadAnswer(youkassaResp)
 	checkerData := webhook.NewWebhookData(payloadResp.YouKassaModel.ID, payloadResp.TransactionId)
-	_ = webhook.StartCheck(checkerData, payloadResp.Status)
+	_ = h.checker.StartCheck(checkerData, payloadResp.Status)
 
 	//Send response to Frontend
 	myJson.Write(w, http.StatusOK, payloadResp)

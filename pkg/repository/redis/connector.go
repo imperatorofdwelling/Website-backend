@@ -86,7 +86,7 @@ func InitRedis(cfg *RedisConfig) error {
 	return nil
 }
 
-func GetCurrRedisDB() (*RedisDB, bool) {
+func GetCurrRedisDB() (RedisInterface, bool) {
 	if currRedisDB == nil {
 		return nil, false
 	}

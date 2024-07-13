@@ -107,13 +107,15 @@ func NewErrorResponse(message string) *ErrorResponse {
 type PaymentHandler struct {
 	log       *slog.Logger
 	logWriter postgres.LogRepository
+	checker   *webhook.Checker
 }
 
-func NewPaymentHandler(log *slog.Logger, db postgres.LogRepository) *PaymentHandler {
-	return &PaymentHandler{
-		log:       log,
-		logWriter: db,
-	}
+func NewPaymentHandler(log *slog.Logger, db postgres.LogRepository, checker *webhook.Checker) *PaymentHandler {
+    return &PaymentHandler{
+        log:       log,
+        logWriter: db,
+        checker:   checker,
+    }
 }
 
 func (h *PaymentHandler) Payment(w http.ResponseWriter, r *http.Request) {
@@ -195,7 +197,7 @@ func (h *PaymentHandler) Payment(w http.ResponseWriter, r *http.Request) {
 
 	paymentResp := NewPaymentAnswer(paymentRespFromYoukassa)
 	checkerData := webhook.NewWebhookData(paymentResp.YouKassaModel.ID, paymentResp.TransactionId)
-	_ = webhook.StartCheck(checkerData, paymentResp.Status)
+	_ = h.checker.StartCheck(checkerData, paymentResp.Status)
 
 	log.Info("response to frontend successfully sent")
 
