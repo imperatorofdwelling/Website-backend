@@ -28,7 +28,7 @@ type ServerConfig struct {
 func LoadConfig() (*ServerConfig, error) {
 	//TODO load vars from .env
 	return &ServerConfig{
-		Addr:         "localhost:8000",
+		Addr:         "0.0.0.0:8080",
 		ReadTimeout:  time.Second * 10,
 		WriteTimeout: time.Second * 10,
 		IdleTimeout:  time.Second * 5,
@@ -81,7 +81,7 @@ func NewRouter(log *slog.Logger, repo postgres.LogRepository) http.Handler {
 
 func (s *Server) Run() {
 	// Logger print need
-	log.Println("Server start")
+	log.Println("Server started...")
 	if err := s.srv.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
