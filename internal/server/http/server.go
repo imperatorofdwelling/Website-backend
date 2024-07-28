@@ -1,6 +1,7 @@
 package http
 
 import (
+	httpSwagger "github.com/swaggo/http-swagger"
 	"log"
 	"time"
 
@@ -70,11 +71,16 @@ func NewRouter(log *slog.Logger, repo postgres.LogRepository) http.Handler {
 		"/payment/create",
 		payment.Payment)
 	r.Post(
-		"/save_card",
+		"/card/save",
 		saveCard.SaveCard)
 	r.Post(
 		"/payload/create",
 		payload.Payload)
+
+	// Docs
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("http://localhost:8080/swagger/doc.json"), //The url pointing to API definition
+	))
 
 	return r
 }

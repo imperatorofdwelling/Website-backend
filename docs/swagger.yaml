@@ -1,0 +1,217 @@
+basePath: /
+definitions:
+  endpoints.Amount:
+    properties:
+      currency:
+        type: string
+      value:
+        type: string
+    type: object
+  endpoints.ConfirmationResponse:
+    properties:
+      confirmation_token:
+        type: string
+      type:
+        type: string
+    type: object
+  endpoints.Create:
+    properties:
+      amount:
+        $ref: '#/definitions/endpoints.Amount'
+      user_id:
+        type: string
+    type: object
+  endpoints.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  endpoints.PayloadAnswer:
+    properties:
+      status:
+        $ref: '#/definitions/metrics.Status'
+      transaction_id:
+        type: string
+      you_kassa_payload_model:
+        $ref: '#/definitions/endpoints.YooKassaPayloadModel'
+    type: object
+  endpoints.PaymentResponse:
+    properties:
+      amount:
+        $ref: '#/definitions/endpoints.Amount'
+      confirmation:
+        $ref: '#/definitions/endpoints.ConfirmationResponse'
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      metadata: {}
+      paid:
+        type: boolean
+      recipient:
+        $ref: '#/definitions/endpoints.Recipient'
+      refundable:
+        type: boolean
+      status:
+        $ref: '#/definitions/metrics.Status'
+      test:
+        type: boolean
+    type: object
+  endpoints.PayoutRequestEndpoint:
+    properties:
+      amount:
+        $ref: '#/definitions/endpoints.Amount'
+      user_id:
+        type: string
+    type: object
+  endpoints.Recipient:
+    properties:
+      account_id:
+        type: string
+      gateway_id:
+        type: string
+    type: object
+  endpoints.SaveCard:
+    properties:
+      first_six:
+        type: string
+      last_four:
+        type: string
+      synonym:
+        type: string
+      user_id:
+        type: string
+    type: object
+  endpoints.SaveCardResponse:
+    properties:
+      error:
+        type: string
+      status:
+        $ref: '#/definitions/metrics.Status'
+    type: object
+  endpoints.YooKassaPayloadModel:
+    properties:
+      amount:
+        $ref: '#/definitions/endpoints.Amount'
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      status:
+        $ref: '#/definitions/metrics.Status'
+      test:
+        type: boolean
+    type: object
+  metrics.Status:
+    enum:
+    - succeeded
+    - canceled
+    - waiting_for_capture
+    - pending
+    type: string
+    x-enum-varnames:
+    - Succeeded
+    - Canceled
+    - WaitingForCapture
+    - Pending
+host: localhost:8080
+info:
+  contact: {}
+  description: Payment System for Imperator Of Dwelling written on Golang
+  title: Imperator Of Dwelling Payment System
+  version: "1.0"
+paths:
+  /card/save:
+    post:
+      consumes:
+      - application/json
+      description: Saves a refillable card's information.
+      parameters:
+      - description: Card information
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/endpoints.SaveCard'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/endpoints.SaveCardResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/endpoints.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/endpoints.ErrorResponse'
+      summary: Save Refillable Card
+      tags:
+      - Card
+  /payload/create:
+    post:
+      consumes:
+      - application/json
+      description: Handles the payout process to a user.
+      parameters:
+      - description: Payout details
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/endpoints.PayoutRequestEndpoint'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/endpoints.PayloadAnswer'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/endpoints.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/endpoints.ErrorResponse'
+      summary: Make Payout
+      tags:
+      - Payload
+  /payment/create:
+    post:
+      consumes:
+      - application/json
+      description: Handles the payment process, including reading the request, making
+        the API call, and responding to the frontend.
+      parameters:
+      - description: Payment request details
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/endpoints.Create'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/endpoints.PaymentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/endpoints.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/endpoints.ErrorResponse'
+      summary: Create a new payment
+swagger: "2.0"

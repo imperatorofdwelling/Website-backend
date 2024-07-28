@@ -68,6 +68,18 @@ func NewSaveCardHandler(log *slog.Logger, db postgres.LogRepository) *SaveCardHa
 	}
 }
 
+// SaveCard handles the request to save a card.
+//
+//	@Summary		Save Refillable Card
+//	@Tags			Card
+//	@Description	Saves a refillable card's information.
+//	@Accept			json
+//	@Produce		json
+//	@Param			input	body		SaveCard	true	"Card information"
+//	@Success		200		{object}	SaveCardResponse
+//	@Failure		400		{object}	ErrorResponse
+//	@Failure		500		{object}	ErrorResponse
+//	@Router			/card/save [post]
 func (h SaveCardHandler) SaveCard(w http.ResponseWriter, r *http.Request) {
 	const fn = "endpoints.SaveCardHandler"
 
@@ -203,6 +215,17 @@ func NewPayloadHandler(log *slog.Logger, logWriter postgres.LogRepository) *Payl
 	}
 }
 
+// PayloadHandler handles the request for a payout.
+//	@Summary		Make Payout
+//	@Tags			Payload
+//	@Description	Handles the payout process to a user.
+//	@Accept			json
+//	@Produce		json
+//	@Param			input	body		PayoutRequestEndpoint	true	"Payout details"
+//	@Success		200		{object}	PayloadAnswer
+//	@Failure		400		{object}	ErrorResponse
+//	@Failure		500		{object}	ErrorResponse
+//	@Router			/payload/create [post]
 func (h *PayloadHandler) Payload(w http.ResponseWriter, r *http.Request) {
 	const fn = "endpoints.Payload"
 

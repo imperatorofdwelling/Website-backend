@@ -57,10 +57,10 @@ func (c *Config) Run(logger *slog.Logger) {
 	repo := postgres.NewLogRepository(db)
 
 	// Redis
-	err = redis.InitRedis(c.RedisConfig)
-	if err != nil {
-		log.Fatal(err)
-	}
+	//err = redis.InitRedis(c.RedisConfig)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
 
 	// To init storeId and secretKey from .env
 	metrics.Init()

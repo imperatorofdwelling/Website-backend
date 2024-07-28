@@ -115,6 +115,17 @@ func NewPaymentHandler(log *slog.Logger, db postgres.LogRepository) *PaymentHand
 	}
 }
 
+// Payment handles the payment process, including reading the request, making the API call, and responding to the frontend.
+//
+//	@Summary		Create a new payment
+//	@Description	Handles the payment process, including reading the request, making the API call, and responding to the frontend.
+//	@Accept			json
+//	@Produce		json
+//	@Param			input	body		Create	true	"Payment request details"
+//	@Success		200		{object}	PaymentResponse
+//	@Failure		400		{object}	ErrorResponse
+//	@Failure		500		{object}	ErrorResponse
+//	@Router			/payment/create [post]
 func (h *PaymentHandler) Payment(w http.ResponseWriter, r *http.Request) {
 	const fn = "endpoints.Payment"
 
